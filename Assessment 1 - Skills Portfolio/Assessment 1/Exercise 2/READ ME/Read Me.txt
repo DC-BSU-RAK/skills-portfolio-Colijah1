@@ -1,0 +1,3 @@
+Must download resources folder
+Must download sound assets
+Must install pygame
