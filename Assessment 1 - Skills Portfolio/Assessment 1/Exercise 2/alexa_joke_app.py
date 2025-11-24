@@ -6,6 +6,13 @@ import threading
 import subprocess
 import sys
 
+# Try to import PIL for icon creation
+try:
+    from PIL import Image, ImageTk, ImageDraw
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
 # Try to import audio libraries
 try:
     import winsound
@@ -32,6 +39,9 @@ class AlexaJokeApp:
         self.root.geometry("600x400")
         self.root.resizable(False, False)
         
+        # Set custom window icon
+        self.set_window_icon()
+        
         # Set root window background color for card effect - calm blue-gray
         self.root.configure(bg='#f5f7fa')
         
@@ -51,6 +61,61 @@ class AlexaJokeApp:
         # Create GUI elements
         self.create_widgets()
     
+    def set_window_icon(self):
+        """Create and set a custom window icon for Alexa Joke App"""
+        try:
+            if HAS_PIL:
+                icon_path = os.path.join(os.path.dirname(__file__), "alexa_icon.ico")
+                
+                # Create icon file if it doesn't exist
+                if not os.path.exists(icon_path):
+                    # Create icon images in multiple sizes
+                    icon_images = []
+                    for size in [(16, 16), (32, 32), (48, 48), (64, 64)]:
+                        # Create an image with a blue background (matching app theme)
+                        img = Image.new('RGBA', size, color=(52, 152, 219, 255))  # #3498db
+                        draw = ImageDraw.Draw(img)
+                        
+                        # Draw a circle for the icon background
+                        margin = max(1, size[0] // 8)
+                        draw.ellipse([margin, margin, size[0]-margin, size[1]-margin], 
+                                   outline='white', width=max(1, size[0] // 16))
+                        
+                        # Draw "A" letter for Alexa in white
+                        try:
+                            from PIL import ImageFont
+                            font_size = max(8, size[0] // 2)
+                            draw.text((size[0]//2, size[1]//2), 'A', fill='white', 
+                                     anchor='mm', font=None)
+                        except:
+                            draw.text((size[0]//2, size[1]//2), 'A', fill='white', anchor='mm')
+                        
+                        icon_images.append(img)
+                    
+                    # Save as ICO file with multiple sizes
+                    icon_images[0].save(icon_path, format='ICO', sizes=[(img.width, img.height) for img in icon_images])
+                
+                # Set the icon using iconbitmap (best for Windows)
+                try:
+                    self.root.iconbitmap(icon_path)
+                except:
+                    # Fallback to iconphoto
+                    img = Image.open(icon_path)
+                    photo = ImageTk.PhotoImage(img)
+                    self.root.iconphoto(True, photo)
+                    self.icon_images = [photo]
+            else:
+                # Fallback: Try to use iconbitmap if icon file exists
+                icon_path = os.path.join(os.path.dirname(__file__), "alexa_icon.ico")
+                if os.path.exists(icon_path):
+                    try:
+                        self.root.iconbitmap(icon_path)
+                    except:
+                        pass
+        except Exception as e:
+            # If icon setting fails, continue without custom icon
+            pass
+
     def setup_sound_paths(self):
         """Setup paths to MP3 sound files"""
         script_dir = os.path.dirname(os.path.abspath(__file__))
