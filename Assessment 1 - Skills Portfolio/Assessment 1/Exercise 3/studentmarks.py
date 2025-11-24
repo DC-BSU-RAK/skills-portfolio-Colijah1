@@ -2,6 +2,11 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
 import threading
+try:
+    from PIL import Image, ImageTk, ImageDraw
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 # ----- Helper functions -----
 
@@ -86,6 +91,7 @@ class StudentRecordsApp:
         self.root.configure(bg="#f4f6fa")
         self.root.geometry("950x600")
         self.root.minsize(800,500)
+        self.set_window_icon()
         self.filename = os.path.join(os.path.dirname(__file__), "studentMarks.txt")
         self.students = []
         self.current_sort_asc = True
@@ -95,6 +101,63 @@ class StudentRecordsApp:
         self.initialize_ui()
         self.status_msg_queue = []
         self.data_reload()
+
+    def set_window_icon(self):
+        """Create and set a custom window icon"""
+        try:
+            if HAS_PIL:
+                icon_path = os.path.join(os.path.dirname(__file__), "app_icon.ico")
+                
+                # Create icon file if it doesn't exist
+                if not os.path.exists(icon_path):
+                    # Create icon images in multiple sizes
+                    icon_images = []
+                    for size in [(16, 16), (32, 32), (48, 48), (64, 64)]:
+                        # Create an image with a blue background
+                        img = Image.new('RGBA', size, color=(70, 143, 214, 255))  # #468fd6
+                        draw = ImageDraw.Draw(img)
+                        
+                        # Draw a white circle border
+                        margin = max(1, size[0] // 8)
+                        draw.ellipse([margin, margin, size[0]-margin, size[1]-margin], 
+                                   outline='white', width=max(1, size[0] // 16))
+                        
+                        # Draw "S" letter in white
+                        try:
+                            # Try to use a better font if available
+                            from PIL import ImageFont
+                            font_size = max(8, size[0] // 2)
+                            # Use default font
+                            draw.text((size[0]//2, size[1]//2), 'S', fill='white', 
+                                     anchor='mm', font=None)
+                        except:
+                            draw.text((size[0]//2, size[1]//2), 'S', fill='white', anchor='mm')
+                        
+                        icon_images.append(img)
+                    
+                    # Save as ICO file with multiple sizes
+                    icon_images[0].save(icon_path, format='ICO', sizes=[(img.width, img.height) for img in icon_images])
+                
+                # Set the icon using iconbitmap (best for Windows)
+                try:
+                    self.root.iconbitmap(icon_path)
+                except:
+                    # Fallback to iconphoto
+                    img = Image.open(icon_path)
+                    photo = ImageTk.PhotoImage(img)
+                    self.root.iconphoto(True, photo)
+                    self.icon_images = [photo]
+            else:
+                # Fallback: Try to use iconbitmap if icon file exists
+                icon_path = os.path.join(os.path.dirname(__file__), "app_icon.ico")
+                if os.path.exists(icon_path):
+                    try:
+                        self.root.iconbitmap(icon_path)
+                    except:
+                        pass
+        except Exception as e:
+            # If icon setting fails, continue without custom icon
+            pass
 
     def setup_styles(self):
         # Modern color palette
